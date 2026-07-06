@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>Melodi | Music Player</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <!-- اضافه شدن FontAwesome برای آیکون‌های جدید -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg1: #0f1220;
+            --bg2: #171c31;
+            --card: rgba(20, 24, 42, .78);
+            --text: #eef2ff;
+            --muted: #a8afcf;
+            --accent: #7c5cff;
+            --accent2: #35c2ff;
+            --shadow: 0 24px 60px rgba(0, 0, 0, .35);
+            --error: #ff4757;
+            --font-main: 'Vazirmatn', sans-serif;
+            /* اضافه شده برای دکمه‌های جدید */
+            --fs-btn-bg: #24242f;
+            --border-purple: #a29bfe;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(124, 92, 255, .18), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(53, 194, 255, .14), transparent 28%),
+                linear-gradient(135deg, var(--bg1), var(--bg2));
+            position: relative;
+        }
+
+        /* ========= Splash Screen ========= */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0e1a, #11162a);
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
+        .splash-content {
+            text-align: center;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+        }
+        .splash-icon {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 28px;
+            background: linear-gradient(145deg, rgba(124, 92, 255, 0.2), rgba(53, 194, 255, 0.1));
+            border-radius: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        .splash-title {
+            font-size: 52px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, var(--accent2), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 10px rgba(124, 92, 255, 0.3);
+        }
+        .splash-sub {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 3px;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+        .countdown-wrapper {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            margin: 32px auto 0;
+        }
+        .splash-loader {
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(124, 92, 255, 0.2);
+            border-top: 3px solid var(--accent2);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #countdownNumber {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--accent2);
+            text-shadow: 0 0 10px rgba(53, 194, 255, 0.5);
+            font-family: var(--font-main);
+            background: transparent;
+            z-index: 2;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .splash-screen.hide {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* ========= Offline Page ========= */
+        .offline-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10001;
+            background: rgba(10, 14, 26, 0.75);
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        }
+        .offline-page.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .offline-content {
+            text-align: center;
+            animation: fadeInUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+            padding: 48px 40px;
+            background: rgba(20, 24, 42, 0.65);
+            backdrop-filter: blur(28px);
+            border-radius: 72px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            margin: 20px;
+            max-width: 440px;
+        }
+        .offline-icon {
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 100, 100, 0.12);
+            border-radius: 50%;
+            backdrop-filter: blur(4px);
+        }
+        .offline-icon svg {
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(0 0 15px rgba(255, 100, 100, 0.4));
+        }
+        .offline-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffaaaa, #ff6b6b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+        .offline-text {
+            font-size: 15px;
+            color: #c8cfef;
+            letter-spacing: 1px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .offline-retry {
+            margin-top: 36px;
+            padding: 14px 36px;
+            border-radius: 60px;
+            background: linear-gradient(135deg, rgba(124, 92, 255, 0.5), rgba(53, 194, 255, 0.3));
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-size: 16px;
+            backdrop-filter: blur(8px);
+        }
+        .offline-retry:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, rgba(124, 92, 255, 0.7), rgba(53, 194, 255, 0.5));
+            border-color: rgba(124, 92, 255, 0.8);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .offline-retry:active {
+            transform: translateY(1px);
+        }
+
+        /* ========= Main Player ========= */
+        .player {
+            width: min(920px, 100%);
+            min-height: 520px;
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 34px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            position: relative;
+        }
+
+        .cover-side {
+            padding: 24px;
+            background: linear-gradient(160deg, rgba(124, 92, 255, .18), rgba(53, 194, 255, .08));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+        }
+
+        .cover-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 320px;
+            border-radius: 26px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: #0c1020;
+        }
+
+        .cover-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        .cover-box img.loaded {
+            opacity: 1;
+        }
+        .cover-box::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, .45), transparent 45%);
+            pointer-events: none;
+        }
+
+        .content {
+            padding: 30px 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .title-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .artist {
+            color: var(--muted);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .progress-area {
+            width: min(100%, 480px);
+            margin: 0 auto;
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .06);
+            border-radius: 18px;
+            padding: 12px 14px;
+        }
+        .time-row {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .progress {
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .08);
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, .28);
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            position: relative;
+        }
+        .progress-bar::after {
+            content: "";
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 0 5px rgba(124, 92, 255, .16);
+        }
+
+        /* ===== controls: perfectly centered ===== */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .controls-center {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .round {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .04));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .06);
+            display: grid;
+            place-items: center;
+            font-size: 0;
+            position: relative;
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+        }
+        .round::before {
+            content: "";
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-top: 3px solid #eef2ff;
+            border-right: 3px solid #eef2ff;
+            opacity: .95;
+        }
+        .prev::before {
+            transform: rotate(225deg);
+            margin-left: 3px;
+        }
+        .next::before {
+            transform: rotate(45deg);
+            margin-right: 3px;
+        }
+
+        .play {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            box-shadow: 0 14px 34px rgba(124, 92, 255, .38), 0 0 0 1px rgba(255, 255, 255, .12) inset;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .12);
+            position: relative;
+            cursor: pointer;
+        }
+        .play::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-35%, -50%);
+            width: 0;
+            height: 0;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 18px solid #fff;
+        }
+        .pause::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 18px;
+            height: 22px;
+            background: linear-gradient(to right, #fff 0 38%, transparent 38% 62%, #fff 62% 100%);
+            border-radius: 2px;
+            border: none;
+        }
+        .play:hover,
+        .round:hover {
+            filter: brightness(1.08);
+            transform: translateY(-2px);
+        }
+        .fs-ctrl-btn {
+    position: relative;  /* ← اضافه شود */
+    background: rgba(42, 47, 69, 0.85);
+    border: none;
+    color: var(--text-main, #f1f1f5);
+    font-size: 20px;
+    cursor: pointer;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    transition: 0.2s;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, .12);
+        }
+       .repeat-one-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-40%, -30%);
+    font-size: 4px;          /* افزایش اندازه برای خوانایی بهتر */
+    font-weight: 900;
+    color: #ffffff;           /* یا هر رنگی که با پس‌زمینه تضاد داشته باشد */
+    pointer-events: none;     /* جلوگیری از تداخل کلیک */
+    text-shadow: 0 0 8px rgba(0,0,0,0.6); /* برای وضوح بیشتر روی آیکون */
+        }
+        /* ===== دکمه حالت تکرار جدید (مشابه کد دوم) ===== */
+
+        
+        /* حالت شافل فعال */
+        .mode-btn.shuffle-active {
+            background: rgba(42, 47, 69, 0.85);
+            border-color: rgba(124, 92, 255, 0.6);
+            box-shadow: 0 0 30px rgba(124, 92, 255, 0.15);
+        }
+
+       /* ===== Download Button - کاملاً هماهنگ با دکمه‌های حالت ===== */
+        .icon-only-btn {
+    background: rgba(42, 47, 69, 0.85);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    backdrop-filter: blur(8px);
+    text-decoration: none;
+        }
+        .icon-only-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #f1f1f5;           /* سفید مثل آیکون‌های FontAwesome */
+    stroke: none;
+    transition: fill 0.2s;
+        }
+        .icon-only-btn:hover {
+        }
+
+        /* ===== New bottom row: icons + labels ===== */
+        .bottom-row-icons {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 28px;
+            margin-top: 12px;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: var(--font-main);
+            padding: 0;
+        }
+        .icon-item:hover .icon-circle {
+            transform: translateY(-3px);
+            background: rgba(124, 92, 255, 0.25);
+            border-color: rgba(124, 92, 255, 0.5);
+        }
+        .icon-item:hover .icon-label {
+            color: var(--accent2);
+        }
+        .icon-circle {
+            width: 100px;
+            height: 48px;
+            border-radius: 40px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-circle svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--muted);
+            display: block;
+        }
+        .icon-item:hover .icon-circle {
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.05);
+        }
+        .icon-item:hover .icon-label {
+            color: var(--text);
+        }
+
+        /* ========= modal styles ========= */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, #1e2338, #15192b);
+            padding: 34px 28px;
+            border-radius: 36px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-title {
+            font-size: 28px;
+            margin-bottom: 22px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .playlist-search-input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 32px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-family: var(--font-main);
+        }
+        .playlist-search-input:focus {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .playlist-search-input::placeholder {
+            color: var(--muted);
+            opacity: 0.7;
+        }
+
+        .artists-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin: 10px 0 15px;
+            max-height: 460px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .artist-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 28px;
+            padding: 14px 18px;
+            transition: 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+        .artist-card:hover {
+            background: rgba(124, 92, 255, 0.12);
+            transform: translateX(6px);
+        }
+        .artist-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .artist-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #1e243c;
+            border: 2px solid var(--accent2);
+            box-shadow: 0 0 0 3px rgba(53, 194, 255, 0.2);
+        }
+        .artist-info {
+            flex: 1;
+            text-align: left;
+        }
+        .artist-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .song-count {
+            font-size: 13px;
+            color: var(--accent2);
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        .songs-preview {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .artist-card.expanded .songs-preview {
+            display: flex;
+        }
+        .preview-song {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 40px;
+            padding: 6px 16px 6px 12px;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .preview-song:hover {
+            background: rgba(124, 92, 255, 0.3);
+            transform: scale(0.98);
+        }
+        .preview-song-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .preview-song-artist {
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .preview-song-cover {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 8px;
+        }
+        .play-icon-small {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 28px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            display: none;
+        }
+        .search-results.show {
+            display: block;
+        }
+        .result-item {
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .result-item:hover {
+            background: rgba(124, 92, 255, 0.1);
+        }
+        .result-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        .result-info {
+            text-align: left;
+        }
+        .result-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .result-artist {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .error-message {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 28px;
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff8a9a;
+            font-size: 13px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .error-message.show {
+            display: flex;
+        }
+        .info-content {
+            text-align: left;
+            margin-top: 15px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .info-icon {
+            width: 22px;
+            height: 22px;
+            fill: var(--accent2);
+        }
+        .info-label {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--muted);
+            width: 110px;
+            flex-shrink: 0;
+        }
+        .info-value {
+            font-size: 12px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .search-action-btn {
+            padding: 12px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 15px;
+            min-width: 110px;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-search {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border: none;
+        }
+        .btn-close:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .not-found-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-direction: column;
+        }
+        .not-found-message svg {
+            width: 48px;
+            height: 48px;
+        }
+
+        @media (max-width: 860px) {
+            .player {
+                grid-template-columns: 1fr;
+            }
+            .content {
+                padding: 22px;
+            }
+            h1 {
+                font-size: 26px;
+            }
+            .icon-circle {
+                width: 70px;
+                height: 58px;
+            }
+            .icon-circle svg {
+                width: 24px;
+                height: 24px;
+            }
+            .icon-label {
+                font-size: 11px;
+            }
+            .bottom-row-icons {
+                gap: 18px;
+            }
+            .round {
+                width: 48px;
+                height: 48px;
+            }
+            .play {
+                width: 62px;
+                height: 62px;
+            }
+            .fs-ctrl-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+            }
+            .icon-only-btn {
+                width: 48px;
+                height: 48px;
+            }
+            .icon-only-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+            .controls-row {
+                gap: 14px;
+            }
+            .controls-center {
+                gap: 12px;
+            }
+            .splash-icon {
+                width: 100px;
+                height: 100px;
+            }
+            .splash-title {
+                font-size: 38px;
+            }
+            .countdown-wrapper {
+                width: 50px;
+                height: 50px;
+            }
+            #countdownNumber {
+                font-size: 24px;
+            }
+            .playlist-search-input {
+                padding: 10px 14px;
+                font-size: 12px;
+                margin-bottom: 16px;
+            }
+            .offline-title {
+                font-size: 26px;
+            }
+            .offline-icon {
+                width: 80px;
+                height: 80px;
+            }
+            .offline-icon svg {
+                width: 60px;
+                height: 60px;
+            }
+            .offline-content {
+                padding: 32px 24px;
+                margin: 16px;
+            }
+            .offline-retry {
+                padding: 10px 28px;
+                font-size: 14px;
+            }
+            .not-found-message {
+                padding: 30px;
+            }
+            .not-found-message svg {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Splash Screen ===== -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <img id="splashLogo" src="https://uploadkon.ir/uploads/5f3708_26InShot-20260608-224516472.jpg" alt="Melodi Logo" style="width:100%;height:100%;object-fit:cover;border-radius:48px;">
+            </div>
+            <div class="splash-title">Melodi</div>
+            <div class="splash-sub">Music Player</div>
+            <div class="countdown-wrapper">
+                <div class="splash-loader"></div>
+                <span id="countdownNumber">5</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Offline Warning ===== -->
+    <div id="offlinePage" class="offline-page">
+        <div class="offline-content">
+            <div class="offline-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ff8888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="rgba(255,136,136,0.08)"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </div>
+            <div class="offline-title">⚠️ No Connection</div>
+            <div class="offline-text">You are currently offline.<br>Please check your internet connection.</div>
+            <div class="offline-retry" id="offlineRetryBtn">⟳ Retry</div>
+        </div>
+    </div>
+
+    <!-- ===== Main Player ===== -->
+    <div class="player" id="mainPlayer">
+        <div class="cover-side">
+            <div class="cover-box">
+                <img id="cover" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23171c31'/%3E%3Ccircle cx='300' cy='300' r='100' fill='%233e42f5' opacity='0.5'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='24' fill='%23fff' text-anchor='middle' opacity='0.5'%3ENo Image%3C/text%3E%3C/svg%3E" alt="cover" />
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="title-wrap">
+                <h1 id="title">Song Title</h1>
+                <div class="artist" id="artist">Artist Name</div>
+            </div>
+
+            <div class="progress-area">
+                <div class="time-row"><span id="currentTime">0:00</span><span id="duration">0:00</span></div>
+                <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+            </div>
+
+            <!-- ===== controls: دکمه حالت تکرار با آیکون‌های FontAwesome ===== -->
+            <div class="controls-row">
+                <div class="controls-center">
+                    <a id="downloadBtn" class="icon-only-btn" href="#" download>
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    </a>
+                    <button class="round prev" id="prevBtn"></button>
+                    <button class="play" id="playBtn"></button>
+                    <button class="round next" id="nextBtn"></button>
+                    <!-- دکمه حالت جدید -->
+                    <button id="modeBtn" class="fs-ctrl-btn repeat-btn active" title="Repeat all">
+                        <i class="fa-solid fa-repeat"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== New bottom row with icons + labels ===== -->
+            <div class="bottom-row-icons">
+                <!-- Information -->
+                <button id="infoBtn" class="icon-item">
+                    <div class="icon-circle">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    </div>
+                    <span class="icon-label">Information</span>
+                </button>
+                <!-- Playlist -->
+                <button id="playlistBtn" class="icon-item">
+                    <div class="icon-circle">
+                        <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zm13-6v10l5-5-5-5z"/></svg>
+                    </div>
+                    <span class="icon-label">PlayList</span>
+                </button>
+                <!-- Search -->
+                <button id="searchBtn" class="icon-item">
+                    <div class="icon-circle">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    </div>
+                    <span class="icon-label">Search</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Modal: Playlist ===== -->
+    <div class="modal-overlay" id="playlistModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Artists & Songs</h2>
+            <input type="text" id="playlistSearchInput" class="playlist-search-input" placeholder="🔍 Search artist's name...">
+            <div id="artistGroupsContainer" class="artists-grid"></div>
+            <div class="modal-actions"><button class="search-action-btn btn-close" id="closePlaylistBtn">Close</button></div>
+        </div>
+    </div>
+
+    <!-- ===== Modal: Search ===== -->
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Find Your Song</h2>
+            <input type="text" id="searchInput" class="search-input" placeholder="Type song or artist name...">
+            <div id="searchResults" class="search-results"></div>
+            <div class="modal-actions"><button class="search-action-btn btn-close" id="closeSearchBtn">Close</button><button class="search-action-btn btn-search" id="performSearchBtn">Search</button></div>
+        </div>
+    </div>
+
+    <!-- ===== Modal: Info ===== -->
+    <div class="modal-overlay" id="infoModalWin">
+        <div class="modal-content">
+            <h2 class="modal-title">About Us</h2>
+            <div class="info-content">
+                <div class="info-item"><svg class="info-icon" viewBox="0 0 24 24"><path d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/></svg><div class="info-label">Application :</div><div class="info-value">Melodi</div></div>
+                <div class="info-item"><svg class="info-icon" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg><div class="info-label">Developer :</div><div class="info-value">AmirMahdi.JN</div></div>
+                <div class="info-item"><svg class="info-icon" viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg><div class="info-label">Instagram :</div><div class="info-value">@_AmirMahdi.JN_</div></div>
+                <div class="info-item"><svg class="info-icon" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/></svg><div class="info-label">Mobile :</div><div class="info-value">09918659151</div></div>
+            </div>
+            <div class="modal-actions"><button class="search-action-btn btn-close" id="closeInfoModalBtn">Close</button></div>
+        </div>
+    </div>
+
+    <audio id="audio"></audio>
+
+    <script>
+        // ============ Offline Management ============
+        const offlinePage = document.getElementById('offlinePage');
+        const mainPlayer = document.getElementById('mainPlayer');
+        const retryBtn = document.getElementById('offlineRetryBtn');
+
+        function checkConnectionAndShow() {
+            if (!navigator.onLine) {
+                offlinePage.classList.add('show');
+                if (mainPlayer) mainPlayer.style.opacity = '0.3';
+                mainPlayer.style.pointerEvents = 'none';
+            } else {
+                offlinePage.classList.remove('show');
+                if (mainPlayer) mainPlayer.style.opacity = '1';
+                mainPlayer.style.pointerEvents = 'auto';
+            }
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(checkConnectionAndShow, 900);
+        });
+
+        window.addEventListener('offline', checkConnectionAndShow);
+        window.addEventListener('online', checkConnectionAndShow);
+
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                if (navigator.onLine) {
+                    offlinePage.classList.remove('show');
+                    if (mainPlayer) mainPlayer.style.opacity = '1';
+                    mainPlayer.style.pointerEvents = 'auto';
+                } else {
+                    offlinePage.style.animation = 'none';
+                    setTimeout(() => { offlinePage.style.animation = ''; }, 10);
+                }
+            });
+        }
+
+        // ============ Splash Screen ============
+        let countdown = 5;
+        const countdownEl = document.getElementById('countdownNumber');
+        if (countdownEl) countdownEl.textContent = "5";
+        const intervalId = setInterval(() => {
+            countdown--;
+            if (countdownEl && countdown >= 1) countdownEl.textContent = countdown;
+            if (countdown <= 0) {
+                clearInterval(intervalId);
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.classList.add('hide');
+                    setTimeout(() => { splash.style.display = 'none'; }, 800);
+                }
+            }
+        }, 1000);
+
+        // ============ Song List ============
+        const allSongs = [
+            { title: "Siyah Sefid", artist: "Haamim", src: "https://uploadkon.ir/uploads/81d020_26siyah-sefid-Haamim.mp3",
+                cover: "https://uploadkon.ir/uploads/c58621_26InShot-20260521-141731211.jpg" },
+            { title: "Kharab Kardi", artist: "Reza Golzar",
+                src: "https://uploadkon.ir/uploads/a3a220_26Kharab-Kardi-Mohammad-Reza-Golzar.mp3",
+                cover: "https://uploadkon.ir/uploads/aab821_26InShot-20260521-144816267.jpg" },
+            { title: "Man", artist: "Sharomin", src: "https://uploadkon.ir/uploads/f00d20_26man-Sharomin.mp3",
+                cover: "https://uploadkon.ir/uploads/a52b21_26InShot-20260521-145106759.jpg" },
+            { title: "Hame Raftand", artist: "Reza Bahram",
+                src: "https://uploadkon.ir/uploads/123020_26Hame-Raftand-Reza-Bahram.mp3",
+                cover: "https://uploadkon.ir/uploads/d42621_26InShot-20260521-145506543.jpg" },
+            { title: "Doostam", artist: "Mohsen Ebrahimzadeh",
+                src: "https://uploadkon.ir/uploads/a65f20_26Doostam-Mohsen-Ebrahimzadeh.mp3",
+                cover: "https://uploadkon.ir/uploads/35aa21_26InShot-20260521-145711159.jpg" },
+            { title: "Behet Ghol Midam", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/f08d09_26Mohsen-Yeganeh-Behet-Ghol-Midam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/07b309_26InShot-20260609-115437083.jpg" },
+            { title: "Zakhme Kari", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/1a3e12_26Behnam-Bani-Zakhme-Kari-128-.mp3", cover: "https://uploadkon.ir/uploads/10a812_26InShot-20260613-005115663.jpg" },
+            { title: "Ghayegh", artist: "Pirbod", src: "https://uploadkon.ir/uploads/694221_26-Pirbod-Ghayegh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/d89121_26InShot-20260521-152613515.jpg" },
+            { title: "Che Heyf", artist: "Moein Zandi", src: "https://uploadkon.ir/uploads/8e8521_26Moein-Z-Che-Heyf-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/cf0521_26InShot-20260521-152650831.jpg" },
+            { title: "Masalan", artist: "Zanco", src: "https://uploadkon.ir/uploads/b48621_26Zanco-Masalan-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/380221_26InShot-20260521-152719774.jpg" },
+            { title: "Lalaei", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/bcc321_26Ehsan-Daryadel-Lalaei-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/b12721_26InShot-20260521-152738496.jpg" },
+            { title: "Boghze Penhan", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/1f4209_26Hamid-Hiraad-Boghze-Penhan-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/8d1809_26InShot-20260610-001434956.jpg" },
+            { title: "Pa Ghadam", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/975209_26Alireza-Talischi-Paghadam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f56609_26InShot-20260609-225654819.jpg" },
+            { title: "Bi Marefat", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/4c7212_26Behnam-Bani-Bi-Marefat-128-.mp3", cover: "https://uploadkon.ir/uploads/635812_26InShot-20260613-005203691.jpg" },
+            { title: "Mage Chand Bar Zendam", artist: "Ali Yasini",
+                src: "https://uploadkon.ir/uploads/4c5909_26Ali-Yasini-Mage-Chand-Bar-Zendam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/5d9009_26InShot-20260609-110704811.jpg" },
+            { title: "Chatr", artist: "Saman Jalili", src: "https://uploadkon.ir/uploads/b43121_26Saman-Jalili-Chatr-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a87521_26InShot-20260521-152848967.jpg" },
+            { title: "Rabete", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/afbb09_26Shadmehr-Aghili-Rabete-128.mp3",
+                cover: "https://uploadkon.ir/uploads/08b209_26InShot-20260608-141042560.jpg" },
+            { title: "Hasrat", artist: "Ragheb", src: "https://uploadkon.ir/uploads/905909_26Ragheb-Hasrat-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e0ce09_26InShot-20260609-232752083.jpg" },
+            { title: "Cheshmat", artist: "Pirbod", src: "https://uploadkon.ir/uploads/973f21_26Pirbod-Cheshmat-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/716f21_26InShot-20260521-232100900.jpg" },
+            { title: "To", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/e7bd08_26Erfan-Tahmasbi-To-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/478008_26InShot-20260608-134839101.jpg" },
+            { title: "Faghat Boro", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/e77212_26Behnam-Bani-Faghat-Boro-128-.mp3", cover: "https://uploadkon.ir/uploads/84f812_26InShot-20260613-005304632.jpg" },
+            { title: "Ghatar", artist: "Ehsan Daryadel", src: "https://uploadkon.ir/uploads/947921_26Ghatar-Ehsan-Daryadel.mp3",
+                cover: "https://uploadkon.ir/uploads/ab6821_26InShot-20260521-232207326.jpg" },
+            { title: "Male Mani", artist: "Moein Zandi", src: "https://uploadkon.ir/uploads/fa6221_26Male-Mani-Moein-Zandi.mp3",
+                cover: "https://uploadkon.ir/uploads/8f9421_26InShot-20260521-232246164.jpg" },
+            { title: "Jonoon", artist: "Saman Jalili", src: "https://uploadkon.ir/uploads/2f4f21_26Jonoon-Saman-Jalili.mp3",
+                cover: "https://uploadkon.ir/uploads/dc9021_26InShot-20260521-232345545.jpg" },
+            { title: "Darya Darya", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/b9d909_26Garsha-Rezaei-Darya-Darya-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/7d5009_26InShot-20260610-010028261.jpg" },
+            { title: "Bi Ehsas", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/37fd21_26Shadmehr-Aghili-Bi-Ehsas-[128].mp3",
+                cover: "https://uploadkon.ir/uploads/51a721_26InShot-20260521-232407240.jpg" },
+            { title: "Shabe Eshgh", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/545212_26Behnam-Bani-Shabe-Eshgh-128-.mp3", cover: "https://uploadkon.ir/uploads/817312_26InShot-20260613-005314641.jpg" },
+            { title: "Shab Bekheir", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/909d09_26Hamid-Hiraad-Shab-Bekheir-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/768009_26InShot-20260610-001521812.jpg" },
+            { title: "Eshghe Ghadimi", artist: "Reza Golzar",
+                src: "https://uploadkon.ir/uploads/eb3e21_26Mohammadreza-Golzar-Eshghe-Ghadimi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/878521_26InShot-20260522-021745525.jpg" },
+            { title: "Baz Amadam", artist: "Mohsen Chavoshi", src: "https://uploadkon.ir/uploads/92f513_26Mohsen-Chavoshi-Baz-Amadam-128-.mp3", cover: "https://uploadkon.ir/uploads/7d3213_26InShot-20260613-104810766.jpg" },
+            { title: "Khiale To", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/79c109_26Mohsen-Yeganeh-Khiale-To-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/ad4c09_26InShot-20260609-115455256.jpg" },
+            { title: "Shanse Akhar", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/580112_26Reza-Sadeghi-Shanse-Akhar-128-.mp3", cover: "https://uploadkon.ir/uploads/805012_26InShot-20260613-021436638.jpg" },
+            { title: "Negarane Mani", artist: "Morteza Pashaei",
+                src: "https://uploadkon.ir/uploads/b5d321_26Morteza-Pashaei-Negarane-Mani-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/241b21_26InShot-20260522-021910973.jpg" },
+            { title: "Ashegham Karde", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/022f12_26Behnam-Bani-Ashegham-Karde-128-.mp3", cover: "https://uploadkon.ir/uploads/12a212_26InShot-20260613-005351296.jpg" },
+            { title: "Khoon Sard", artist: "Omid Ameri",
+                src: "https://uploadkon.ir/uploads/946d21_26Omid-Ameri-Khoonsard-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/940121_26InShot-20260522-022019467.jpg" },
+            { title: "Beyt", artist: "Ehsan Daryadel", src: "https://uploadkon.ir/uploads/806521_26Ehsan-Daryadel-Beyt-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/02e021_26InShot-20260522-022057847.jpg" },
+            { title: "Bia Bia", artist: "Pirbod", src: "https://uploadkon.ir/uploads/d98c21_26Pirbod-Bia-Bia-320-.mp3",
+                cover: "https://uploadkon.ir/uploads/fd8b21_26InShot-20260522-022115668.jpg" },
+            { title: "Che Konam", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/fe5008_26Erfan-Tahmasbi-Che-Konam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/76b208_26InShot-20260608-134850011.jpg" },
+            { title: "Ghorse Ghamar", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/8b1412_26Behnam-Bani-Ghorse-Ghamar-128-.mp3", cover: "https://uploadkon.ir/uploads/cf7012_26InShot-20260613-005400374.jpg" },
+            { title: "Atasham Bash", artist: "Hojat Ashrafzadeh",
+                src: "https://uploadkon.ir/uploads/bf5322_26Hojat-Ashrafzadeh-Atasham-Bash-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/af0022_26InShot-20260522-134020772.jpg" },
+            { title: "Be To Che", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/2da809_26Alireza-Talischi-Be-To-Che-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/b1a309_26InShot-20260609-225708403.jpg" },
+            { title: "Sargardonam", artist: "Moein Zandi",
+                src: "https://uploadkon.ir/uploads/cff522_26Moein-Z-Sargardonam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/fe9822_26InShot-20260522-134048995.jpg" },
+            { title: "Eshgham", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/70be09_2606-Hamid-Hiraad-Eshgham-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/669d09_26InShot-20260610-001535636.jpg" },
+            { title: "Dordoone", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/500d22_26Ehsan-Daryadel-Dordoone-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a5dd22_26InShot-20260522-134109495.jpg" },
+            { title: "Khoshhalam", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/2aac12_26Behnam-Bani-–-Khoshhalam.mp3", cover: "https://uploadkon.ir/uploads/0f9612_26InShot-20260613-005413780.jpg" },
+            { title: "Hagh", artist: "Pirbod", src: "https://uploadkon.ir/uploads/535022_26Pirbod-Hagh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e32a22_26InShot-20260522-134157244.jpg" },
+            { title: "Cheraghooni", artist: "Ali Yasini",
+                src: "https://uploadkon.ir/uploads/ddeb09_26Ali-Yasini-Cheraghooni-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a3d609_26InShot-20260609-110813118.jpg" },
+            { title: "Teras", artist: "Zanco", src: "https://uploadkon.ir/uploads/b74f22_26Zanco-Teras-Musics-Fa.mp3",
+                cover: "https://uploadkon.ir/uploads/c65622_26InShot-20260522-134224690.jpg" },
+            { title: "To Ra Ke Didam", artist: "Ragheb",
+                src: "https://uploadkon.ir/uploads/a38d09_26Ragheb-To-Ra-Ke-Didam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/392a09_26InShot-20260609-232924258.jpg" },
+            { title: "Bezan Deleto Be Darya", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/429c09_26Garsha-Rezaei-Bezan-Deleto-Be-Darya-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a0c809_26InShot-20260610-010204901.jpg" },
+            { title: "Kojaye In Shahri", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/480512_26Behnam-Bani-Kojaye-In-Shahri-128-.mp3", cover: "https://uploadkon.ir/uploads/19c912_26InShot-20260613-005425090.jpg" },
+            { title: "Ina", artist: "Majid Razavi", src: "https://uploadkon.ir/uploads/ad3322_26Majid-Razavi-Ina-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/abe522_26InShot-20260522-134249323.jpg" },
+            { title: "Tabibe Maher", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/0aec22_26Aron-Afshar-Tabibe-Maher-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/9ecb22_26InShot-20260522-134308863.jpg" },
+            { title: "Donyam", artist: "Hamid Hiraad", src: "https://uploadkon.ir/uploads/0dfd09_26Donyam-Hamid-Hiraad.mp3",
+                cover: "https://uploadkon.ir/uploads/9d4409_26InShot-20260610-001545578.jpg" },
+            { title: "Bemoon", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/828409_26Mohsen-Yeganeh-Bemoon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/ee3509_26InShot-20260609-115506677.jpg" },
+            { title: "Novafen", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/d14012_26Reza-Sadeghi-Novafen-128-.mp3", cover: "https://uploadkon.ir/uploads/218612_26InShot-20260613-021452289.jpg" },
+            { title: "Havalie Paeiz", artist: "Sina Sarlak",
+                src: "https://uploadkon.ir/uploads/e61222_26Sina-Sarlak-Havalie-Paeiz-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/cd5122_26InShot-20260522-134336806.jpg" },
+            { title: "Khastam", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/6d3612_26Behnam-Bani-Khastam-128-.mp3", cover: "https://uploadkon.ir/uploads/653212_26InShot-20260613-005507793.jpg" },
+            { title: "Doori", artist: "Benyamin Bahadori",
+                src: "https://uploadkon.ir/uploads/128722_26Benyamin-Doori-128.mp3",
+                cover: "https://uploadkon.ir/uploads/692c22_26InShot-20260522-134436520.jpg" },
+            { title: "Khodahafez", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/332a08_26Erfan-Tahmasbi-Khodahafez-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/0c7008_26InShot-20260608-134909279.jpg" },
+            { title: "Yakh Zadam", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/966922_26Shadmehr-Aghili-Yakh-Zadam-128.mp3",
+                cover: "https://uploadkon.ir/uploads/42ff22_26InShot-20260522-134459314.jpg" },
+            { title: "Donya", artist: "Saman Jalili", src: "https://uploadkon.ir/uploads/803822_26Saman-Jalili-Donya-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/de6d22_26InShot-20260522-172444821.jpg" },
+            { title: "Vatan", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/e51909_26Hamid-Hiraad-Vatan-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/9d8e09_26InShot-20260610-001616690.jpg" },
+            { title: "Baroon", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/e9d812_26Behnam-Bani-Baroon-128-.mp3", cover: "https://uploadkon.ir/uploads/510712_26InShot-20260613-005515519.jpg" },
+            { title: "Leyla", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/414a09_26Alireza-Talischi-Leyla-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/eff909_26InShot-20260609-225719328.jpg" },
+            { title: "Zibaye Mani", artist: "Hojat Ashrafzadeh",
+                src: "https://uploadkon.ir/uploads/45a722_26Hojat-Ashrafzadeh-Zibaye-Mani-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/647322_26InShot-20260522-172506852.jpg" },
+            { title: "Royaie To", artist: "Atta", src: "https://uploadkon.ir/uploads/a0ef22_26Atta-Royaie-To-320-.mp3",
+                cover: "https://uploadkon.ir/uploads/981b22_26InShot-20260522-172522575.jpg" },
+            { title: "Shabe Royaei", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/eb8a22_26Aron-Afshar-Shabe-Royaei-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/0de222_26InShot-20260522-172729919.jpg" },
+            { title: "Akse To", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/328609_26Garsha-Rezaei-Akse-To-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/aeab09_26InShot-20260610-010216642.jpg" },
+            { title: "Che Bekhay Che Nakhay", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/0ec612_26Behnam-Bani-Che-Bekhay-Che-Nakhay-128-.mp3", cover: "https://uploadkon.ir/uploads/1d5112_26InShot-20260613-005525298.jpg" },
+            { title: "Tabar", artist: "Ali Yasini", src: "https://uploadkon.ir/uploads/275e09_26Ali-Yasini-Tabar-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/7f9409_26InShot-20260609-110832816.jpg" },
+            { title: "Hamine Eshgh", artist: "Ragheb",
+                src: "https://uploadkon.ir/uploads/958109_26Ragheb-Hamine-Eshgh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/383909_26InShot-20260609-232909853.jpg" },
+            { title: "Akhar Namandi", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/73fa09_26Hamid-Hiraad-Akhar-Namandi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/bc5f09_26InShot-20260610-001655564.jpg" },
+            { title: "Manam", artist: "Majid Razavi", src: "https://uploadkon.ir/uploads/d3e922_26Majid-Razavi-Manam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/fc9422_26InShot-20260522-172939031.jpg" },
+            { title: "Hezaro Yek Shab", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/142508_26Erfan-Tahmasbi-Hezaro-Yek-Shab-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/86bb08_26InShot-20260608-134927931.jpg" },
+            { title: "Akhmato Va Kon", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/153a12_26Behnam-Bani-Akhmato-Va-kon-128-.mp3", cover: "https://uploadkon.ir/uploads/380312_26InShot-20260613-005535689.jpg" },
+            { title: "Betars", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/12da09_26Betars-Mohsen-Yeganeh.mp3",
+                cover: "https://uploadkon.ir/uploads/2a4409_26InShot-20260609-115613754.jpg" },
+            { title: "NaRefigh", artist: "Zanco", src: "https://uploadkon.ir/uploads/45b422_26Zanco-Narefigh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/114c22_26InShot-20260522-172950433.jpg" },
+            { title: "Man Khodam", artist: "Pirbod",
+                src: "https://uploadkon.ir/uploads/20ff22_26Pirbod-Man-Khodam-128-musicsweb-ir.mp3",
+                cover: "https://uploadkon.ir/uploads/445622_26InShot-20260522-173007205.jpg" },
+            { title: "Ghaf", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/120509_26Ghaf-Alireza-Talischi.mp3",
+                cover: "https://uploadkon.ir/uploads/64ae09_26InShot-20260609-225727839.jpg" },
+            { title: "Dota Dele Ashegh", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/d6bd12_26Behnam-Bani-2ta-Dele-Ashegh-128-.mp3", cover: "https://uploadkon.ir/uploads/d7ac12_26InShot-20260613-005545382.jpg" },
+            { title: "Mahi", artist: "Ehsan Daryadel", src: "https://uploadkon.ir/uploads/50ef22_26Ehsan-Daryadel-Mahi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/7dfe22_26InShot-20260522-173019829.jpg" },
+            { title: "Dir Kardi", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/9c6c09_26Hamid-Hiraad-Dir-Kardi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/be5c09_26InShot-20260610-001706837.jpg" },
+            { title: "Donbale Khodam Migardam", artist: "Moein Zandi",
+                src: "https://uploadkon.ir/uploads/2d2b22_26Moein-Z-Donbale-Khodam-Migardam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/ff8822_26InShot-20260522-173046766.jpg" },
+            { title: "Moo Meshki", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/4be409_26Garsha-Rezaei-Moo-Meshki-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/989d09_26InShot-20260610-010231715.jpg" },
+            { title: "Sheyda", artist: "Ashvan", src: "https://uploadkon.ir/uploads/0df822_26Sheyda-Ashvan.mp3",
+                cover: "https://uploadkon.ir/uploads/2f7b22_26InShot-20260522-173059200.jpg" },
+            { title: "Hame Donyam", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/a1b112_26Behnam-Bani-Hame-Donyam-128-.mp3", cover: "https://uploadkon.ir/uploads/258812_26InShot-20260613-005636746.jpg" },
+            { title: "Bezar Hame Donya Bedoone", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/62e422_26Aron-Afshar-Bezar-Hame-Donya-Bedoone-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/cb4c22_26InShot-20260522-173110751.jpg" },
+            { title: "Ghasam", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/b5f512_26Reza-Sadeghi-Ghasam-128-.mp3", cover: "https://uploadkon.ir/uploads/74c512_26InShot-20260613-021511411.jpg" },
+            { title: "Negin Ghalbami", artist: "Majid Razavi",
+                src: "https://uploadkon.ir/uploads/15db22_26Majid-Razavi-Negine-Ghalbami-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e25322_26InShot-20260522-173129676.jpg" },
+            { title: "Najla", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/41eb08_26Erfan-Tahmasbi-Najla-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/8dc808_26InShot-20260608-134956594.jpg" },
+            { title: "Cheghad Jalebeh", artist: "Zanco",
+                src: "https://uploadkon.ir/uploads/996122_26Zanco-Cheghad-Jalebeh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/2faf22_26InShot-20260522-173144551.jpg" },
+            { title: "Enferadi", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/cef909_26Hamid-Hiraad-Enferadi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/750409_26InShot-20260610-001717030.jpg" },
+            { title: "In Eshgheh", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/e63112_26Behnam-Bani-In-Eshgheh-128-.mp3", cover: "https://uploadkon.ir/uploads/076d12_26InShot-20260613-005755685.jpg" },
+            { title: "Abe Roo Atish", artist: "Pirbod",
+                src: "https://uploadkon.ir/uploads/3eee22_26Pirbod-Abe-Roo-Atish-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/08d122_26InShot-20260522-173205020.jpg" },
+            { title: "Nade Ghol", artist: "Ali Yasini",
+                src: "https://uploadkon.ir/uploads/51d209_26Ali-Yasini-Nade-Ghol-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/1ac009_26InShot-20260609-110842043.jpg" },
+            { title: "Havaye Eshgh", artist: "Ragheb",
+                src: "https://uploadkon.ir/uploads/473009_26Ragheb-Havaye-Eshgh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/568e09_26InShot-20260609-232801635.jpg" },
+            { title: "Koochamoon", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/2af422_26Ehsan-Daryadel-Koochamoon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f9af22_26InShot-20260522-173222792.jpg" },
+            { title: "Male Man Bash", artist: "Moein Zandi",
+                src: "https://uploadkon.ir/uploads/835f22_26Moein-Z-Male-Man-Bash-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/1c0b22_26InShot-20260522-173234949.jpg" },
+            { title: "Mordab", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/b5e212_26Reza-Sadeghi-Mordab-128-.mp3", cover: "https://uploadkon.ir/uploads/4c6512_26InShot-20260613-021521069.jpg" },
+            { title: "Taavaan", artist: "Ehsan Khaje Amiri",
+                src: "https://uploadkon.ir/uploads/a80b23_26Ehsan-Khaje-Amiri-–-Taavaan-320-.mp3",
+                cover: "https://uploadkon.ir/uploads/81c023_26InShot-20260523-164918803.jpg" },
+            { title: "Del Be Del", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/d27009_26Alireza-Talischi-Del-Be-Del-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/d5a409_26InShot-20260609-225736797.jpg" },
+            { title: "Toyi Entekhabam", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/8e9c12_26Behnam-Bani-Toyi-Entekhabam-128-.mp3", cover: "https://uploadkon.ir/uploads/801312_26InShot-20260613-005805233.jpg" },
+            { title: "Khabar Khabar", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/43c409_26Garsha-Rezaei-Khabar-Khabar-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e70e09_26InShot-20260610-010242208.jpg" },
+            { title: "Bi Badan", artist: "Mohsen Chavoshi", src: "https://uploadkon.ir/uploads/249b13_26Mohsen-Chavoshi-Bi-Badan-128-.mp3", cover: "https://uploadkon.ir/uploads/4da213_26InShot-20260613-104802655.jpg" },
+            { title: "Nimeye Janam", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/7af209_26Hamid-Hiraad-Nimeye-Janam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/270909_26InShot-20260610-001726306.jpg" },
+            { title: "Havaie Shodi", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/bd2e09_26Mohsen-Yeganeh-Havaei-Shodi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/2b6709_26InShot-20260609-115525948.jpg" },
+            { title: "Gharibe", artist: "Ashvan", src: "https://uploadkon.ir/uploads/d13122_26Ashvan-Gharibe-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/8c3c22_26InShot-20260522-173444200.jpg" },
+            { title: "Bia", artist: "Reza Mehrad", src: "https://uploadkon.ir/uploads/afd922_26Reza-Mehrad-Bia.mp3",
+                cover: "https://uploadkon.ir/uploads/526e22_26InShot-20260522-173912643.jpg" },
+            { title: "Nafas", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/7bdf12_26Reza-Sadeghi-Nafas-128-.mp3", cover: "https://uploadkon.ir/uploads/f10012_26InShot-20260613-021528880.jpg" },
+            { title: "Laf", artist: "Raibod", src: "https://uploadkon.ir/uploads/c44e22_26Raibod-LAF-[128].mp3",
+                cover: "https://uploadkon.ir/uploads/184522_26InShot-20260522-173928174.jpg" },
+            { title: "Rad O Bargh", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/816022_26Ehsan-Daryadel-Rad-O-Bargh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/fb0922_26InShot-20260522-214522585.jpg" },
+            { title: "Vaghti Ke Bad Misham", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/10ab09_26Shadmehr-Aghili-Vaghti-Ke-Bad-Misham.mp3",
+                cover: "https://uploadkon.ir/uploads/c3a222_26InShot-20260522-214542410.jpg" },
+            { title: "Yara", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/ebd412_26Behnam-Bani-SagBand-320-.mp3", cover: "https://uploadkon.ir/uploads/6c0312_26InShot-20260613-005815609.jpg" },
+            { title: "Parvaze Ghooha", artist: "Alireza Ghorbani",
+                src: "https://uploadkon.ir/uploads/b68409_26Alireza-Ghorbani-Parvaze-Ghooha-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/424509_26InShot-20260610-021610159.jpg" },
+            { title: "Shakhe Gol", artist: "Kasra Zahedi",
+                src: "https://uploadkon.ir/uploads/a37009_26Kasra-Zahedi-Shakhe-Gol-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f6a609_26InShot-20260609-131617880.jpg" },
+            { title: "Chaloos", artist: "Hamid Askari",
+                src: "https://uploadkon.ir/uploads/d4ab22_26Hamid-Askari-Chaloos-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/bee422_26InShot-20260522-214806390.jpg" },
+            { title: "Shookhie Mage", artist: "Hamid Hiraad",
+                src: "https://uploadkon.ir/uploads/fd9d09_26Hamid-Hiraad-Shookhie-Mage-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/440a09_26InShot-20260610-001736450.jpg" },
+            { title: "Bemoni Baram", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/bdc712_26Reza-Sadeghi-Bemooni-Baram-128-.mp3", cover: "https://uploadkon.ir/uploads/f46012_26InShot-20260613-021536422.jpg" },
+            { title: "Matarsak", artist: "Pirbod", src: "https://uploadkon.ir/uploads/4d6222_26Pirbod-Matarsak-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a06d22_26InShot-20260522-214605695.jpg" },
+            { title: "BadBadaka", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/f74c22_26Ehsan-Daryadel-Badbadaka-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/c92b22_26InShot-20260522-214622948.jpg" },
+            { title: "Rade Paa", artist: "Zanco", src: "https://uploadkon.ir/uploads/23d722_26Zanco-Rade-Paa-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/510222_26InShot-20260522-214636285.jpg" },
+            { title: "Mahe Asal", artist: "Behnam Bani", src: "https://uploadkon.ir/uploads/970d12_26Behnam-Bani-Mahe-Asal-97-128-.mp3", cover: "https://uploadkon.ir/uploads/edd712_26InShot-20260613-005848236.jpg" },
+            { title: "Khial", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/01bd08_26Erfan-Tahmasbi-Khial-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/71e608_26InShot-20260608-135046494.jpg" },
+            { title: "Naro", artist: "Garsha Rezaei", src: "https://uploadkon.ir/uploads/532309_26Garsha-Rezaei-Naro-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f26509_26InShot-20260610-010133127.jpg" },
+            { title: "Akharesh Ghashange", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/da3309_26Alireza-Talischi-Akharesh-Ghashange-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/0dbd09_26InShot-20260609-225744809.jpg" },
+            { title: "Sad Sale Noori", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/716622_26Aron-Afshar-Sad-Sale-Noori-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/9de622_26InShot-20260522-214654135.jpg" },
+            { title: "Ye Chizi Mishe Dige", artist: "Reza Sadeghi", src: "https://uploadkon.ir/uploads/7f7012_26Reza-Sadeghi-Ye-Chizi-Mishe-Dige-128-.mp3", cover: "https://uploadkon.ir/uploads/651c12_26InShot-20260613-021545601.jpg" },
+            { title: "Ziba", artist: "Majid Razavi", src: "https://uploadkon.ir/uploads/159122_26Majid-Razavi-Ziba-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/dd1022_26InShot-20260522-214754498.jpg" },
+            { title: "Delbari", artist: "Ragheb", src: "https://uploadkon.ir/uploads/721a09_26Ragheb-Delbari-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/4bbb09_26InShot-20260609-232817305.jpg" },
+            { title: "Daste Man Nist", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/b6ac09_26Shadmehr-Aghili-Daste-Man-Nist.mp3",
+                cover: "https://uploadkon.ir/uploads/b13909_26InShot-20260608-140722937.jpg" },
+            { title: "Man Bayad Miraftam", artist: "Mohsen Chavoshi",
+                src: "https://uploadkon.ir/uploads/188009_26Mohsen-Chavoshi-Man-Bayad-Miraftam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/4db409_26InShot-20260608-135819403.jpg" },
+            { title: "Amdan", artist: "Sina Shabankhani",
+                src: "https://uploadkon.ir/uploads/008e22_26Sina-Shabankhani-Amdan-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/862222_26InShot-20260522-214713396.jpg" },
+            { title: "Jang", artist: "Ali Yasini", src: "https://uploadkon.ir/uploads/c96309_26Ali-Yasini-Jang-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/24b709_26InShot-20260609-110851619.jpg" },
+            { title: "Talkhi", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/ae4f22_26Ehsan-Daryadel-Talkhi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/767322_26InShot-20260522-214726335.jpg" },
+            { title: "Khande Hato Ghorbon", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/0d5e22_26Aron-Afshar-Khandehato-Ghorboon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/84be22_26InShot-20260522-214820797.jpg" },
+            { title: "Nabashi", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/7b6009_26Mohsen-Yeganeh-Nabashi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/94ad09_26InShot-20260609-121907068.jpg" },
+            { title: "Dobareh Baz", artist: "Moein Zandi",
+                src: "https://uploadkon.ir/uploads/0f5e22_26Moein-Z-Dobareh-Baz-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/ee1322_26InShot-20260522-214915491.jpg" },
+            { title: "Nafas", artist: "Zanco", src: "https://uploadkon.ir/uploads/2e7022_26Zanco-Nafas-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/7f5422_26InShot-20260522-214832225.jpg" },
+            { title: "Shomare Jadidam", artist: "Armin Zarei",
+                src: "https://uploadkon.ir/uploads/d73b22_26Armin-Zarei-Shomare-Jadidam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/4be722_26InShot-20260522-214854439.jpg" },
+            { title: "Botri", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/9a7022_26Ehsan-Daryadel-Botri-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/049f22_26InShot-20260522-214844397.jpg" },
+            { title: "Farz Kon", artist: "Pirbod", src: "https://uploadkon.ir/uploads/23f822_26Pirbod-Farz-Kon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/656922_26InShot-20260522-214934062.jpg" },
+            { title: "Janam Bash", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/406522_26Aron-Afshar-Janam-Bash-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e2ed22_26InShot-20260522-214947687.jpg" },
+            { title: "Ghermez", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/5b5c09_26Ghermez-Garsha-Rezaei.mp3",
+                cover: "https://uploadkon.ir/uploads/a77209_26InShot-20260610-010153058.jpg" },
+            { title: "Vaghteshe Beri", artist: "Ashvan",
+                src: "https://uploadkon.ir/uploads/b3ce22_26Ashvan-Vaghteshe-Beri-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/eac522_26InShot-20260522-215022328.jpg" },
+            { title: "Tamasha", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/17dc09_26Shadmehr-Aghili-Tamasha-[128].mp3",
+                cover: "https://uploadkon.ir/uploads/78a309_26InShot-20260608-140705879.jpg" },
+            { title: "Yeki Hast", artist: "Morteza Pashaei",
+                src: "https://uploadkon.ir/uploads/0a7c09_26Morteza-Pashaei-Yeki-Hast-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/b52d09_26InShot-20260609-104346917.jpg" },
+            { title: "Saate Divari", artist: "Mohsen Chavoshi",
+                src: "https://uploadkon.ir/uploads/b10d09_26Mohsen-Chavoshi-Saate-Divari-320-.mp3",
+                cover: "https://uploadkon.ir/uploads/c4df09_26InShot-20260608-135737411.jpg" },
+            { title: "Taghas", artist: "Hamid Askari",
+                src: "https://uploadkon.ir/uploads/277822_26Hamid-Askari-Taghas-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/6a5422_26InShot-20260522-215007638.jpg" },
+            { title: "Del Kandam", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/563922_26Ehsan-Daryadel-Del-Kandam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/a4a122_26InShot-20260522-215045429.jpg" },
+            { title: "Divooneye Doos Dashtani", artist: "Alireza Talischi",
+                src: "https://uploadkon.ir/uploads/f63e09_26Alireza-Talischi-Divooneye-Doos-Dashtani-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/cdba09_26InShot-20260609-225753487.jpg" },
+            { title: "Roozaye Royaei", artist: "Yousef Zamani",
+                src: "https://uploadkon.ir/uploads/099d22_26Yousef-Zamani-Roozaye-Royaei-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/739222_26InShot-20260522-215103599.jpg" },
+            { title: "Dametoon Garme", artist: "Moein Zandi",
+                src: "https://uploadkon.ir/uploads/169922_26Moein-Z-Dametoon-Garme-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/d89822_26InShot-20260522-215118137.jpg" },
+            { title: "Vase Delam", artist: "Zanco", src: "https://uploadkon.ir/uploads/a13122_26Zanco-Vase-Delam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/477022_26InShot-20260522-215131830.jpg" },
+            { title: "Chalesh", artist: "Omid Ameri",
+                src: "https://uploadkon.ir/uploads/3abd22_26Omid-Ameri-Chalesh-[128].mp3",
+                cover: "https://uploadkon.ir/uploads/d0c222_26InShot-20260522-215149431.jpg" },
+            { title: "Kojaei", artist: "Mohsen Chavoshi", src: "https://uploadkon.ir/uploads/ef5313_26Mohsen-Chavoshi-Sina-Sarlak-Kojaei-128-.mp3", cover: "https://uploadkon.ir/uploads/688413_26InShot-20260613-104733546.jpg" },
+            { title: "Sakhreh", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/62d222_26Ehsan-Daryadel-Sakhreh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/193f22_26InShot-20260522-215214148.jpg" },
+            { title: "Zade Baroon", artist: "Masoud Sadeghloo",
+                src: "https://uploadkon.ir/uploads/439b22_26Masoud-Sadeghloo-Zade-Baroon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/8b0022_26InShot-20260523-003455359.jpg" },
+            { title: "Parvaz", artist: "Ali Yasini", src: "https://uploadkon.ir/uploads/4b8709_26Ali-Yasini-Parvaz-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f33a09_26InShot-20260609-110906508.jpg" },
+            { title: "Ghanoon", artist: "Pirbod", src: "https://uploadkon.ir/uploads/e7d822_26pirbod-ghanoon-128.mp3",
+                cover: "https://uploadkon.ir/uploads/b30f22_26InShot-20260523-003519467.jpg" },
+            { title: "Darya Nemiram", artist: "Garsha Rezaei",
+                src: "https://uploadkon.ir/uploads/654009_26Garsha-Rezaei-Darya-Nemiram-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/1d0e09_26InShot-20260610-010257680.jpg" },
+            { title: "Sahel Aramesh", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/81a422_26Aron-Afshar-Sahel-Aramesh-128.mp3",
+                cover: "https://uploadkon.ir/uploads/c93922_26InShot-20260523-003536139.jpg" },
+            { title: "Shik", artist: "Yousef Zamani", src: "https://uploadkon.ir/uploads/4bc122_26Yousef-Zamani-Shik-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/9f5a22_26InShot-20260523-003546814.jpg" },
+            { title: "Rozh", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/967322_26Ehsan-Daryadel-Rozh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/e7dc22_26InShot-20260523-003558274.jpg" },
+            { title: "Heyf", artist: "Macan Band", src: "https://uploadkon.ir/uploads/9fba22_26Macan-Band-Heyf-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/682422_26InShot-20260523-003611713.jpg" },
+            { title: "Rahayam Kon", artist: "Mohsen Chavoshi",
+                src: "https://uploadkon.ir/uploads/d56a09_26Mohsen-Chavoshi-Rahayam-Kon-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/453709_26InShot-20260608-135830845.jpg" },
+            { title: "Halam Bade", artist: "Omid Ameri",
+                src: "https://uploadkon.ir/uploads/980c22_26Omid-Ameri-Halam-Bade-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/5f7122_26InShot-20260523-003623488.jpg" },
+            { title: "Jane Mani To", artist: "Hojat Ashrafzadeh",
+                src: "https://uploadkon.ir/uploads/aa3222_26Hojat-Ashrafzadeh-Jane-Mani-To-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/521722_26InShot-20260523-003636829.jpg" },
+            { title: "Hich", artist: "Moein Zandi", src: "https://uploadkon.ir/uploads/b62922_26Moein-Z-Hich-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/13fa22_26InShot-20260523-003652952.jpg" },
+            { title: "Nemifahmi", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/c17922_26Ehsan-Daryadel-Nemifahmi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/5e0822_26InShot-20260523-004115377.jpg" },
+            { title: "Edame Nemidam", artist: "Yousef Zamani",
+                src: "https://uploadkon.ir/uploads/e70822_26Yousef-Zamani-Edame-Nemidam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/ff7f22_26InShot-20260523-004130220.jpg" },
+            { title: "Refighe Ghadimi", artist: "Saleh Salehi",
+                src: "https://uploadkon.ir/uploads/c70222_26Saleh-Salehi-Refighe-Ghadimi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/f73722_26InShot-20260523-003705307.jpg" },
+            { title: "Batel", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/6d4909_26Shadmehr-Aghili-Batel-[128].mp3",
+                cover: "https://uploadkon.ir/uploads/a77109_26InShot-20260608-140655960.jpg" },
+            { title: "Mashti", artist: "Masoud Sadeghloo",
+                src: "https://uploadkon.ir/uploads/2a4f22_26Masoud-Sadeghloo-Mashti-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/487422_26InShot-20260523-003720147.jpg" },
+            { title: "Bash Ta Biam", artist: "Zanco",
+                src: "https://uploadkon.ir/uploads/3efb22_26Zanco-Bash-Ta-Biam-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/685922_26InShot-20260523-003738935.jpg" },
+            { title: "Shak", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/db7022_26Ehsan-Daryadel-Shak-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/35a922_26InShot-20260523-003753906.jpg" },
+            { title: "Zaraban Ghalbam", artist: "Yousef Zamani",
+                src: "https://uploadkon.ir/uploads/484322_26Zaraban-Ghalbam-Yousef-Zamani.mp3",
+                cover: "https://uploadkon.ir/uploads/2e8222_26InShot-20260523-003808846.jpg" },
+            { title: "Bodo", artist: "Erfan Tahmasebi", src: "https://uploadkon.ir/uploads/ae0713_26Erfan-Tahmasbi-Bodo-128-.mp3", cover: "https://uploadkon.ir/uploads/293513_26InShot-20260613-104820178.jpg" },
+            { title: "Faghat To", artist: "Pirbod",
+                src: "https://uploadkon.ir/uploads/9dd822_26Pirbod-Faghat-To-128-musicsweb-ir.mp3",
+                cover: "https://uploadkon.ir/uploads/723522_26InShot-20260523-004014460.jpg" },
+            { title: "Paeezieam", artist: "Hojat Ashrafzadeh",
+                src: "https://uploadkon.ir/uploads/a81523_26Paeeziam-Hojjat-Ashrafzadeh.mp3",
+                cover: "https://uploadkon.ir/uploads/d43822_26InShot-20260523-003826322.jpg" },
+            { title: "Atre Bahar", artist: "Aron Afshar",
+                src: "https://uploadkon.ir/uploads/c2d922_26Aron-Afshar-Atre-Bahar-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/be7822_26InShot-20260523-003842505.jpg" },
+            { title: "Sange Saboor", artist: "Mohsen Chavoshi",
+                src: "https://uploadkon.ir/uploads/cd1309_26Mohsen-Chavoshi-Sange-Saboor-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/7a8009_26InShot-20260608-135749824.jpg" },
+            { title: "Sokoot", artist: "Mohsen Yeganeh",
+                src: "https://uploadkon.ir/uploads/906f09_26Mohsen-Yeganeh-Sokoot-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/1cef09_26InShot-20260609-115935213.jpg" },
+            { title: "Story", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/b78a22_26Ehsan-Daryadel-Story-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/aaf122_26InShot-20260523-003857562.jpg" },
+            { title: "Zire Baroona Gomam", artist: "Mehdi Darabi",
+                src: "https://uploadkon.ir/uploads/5e5f19_26Hoorush-Band-Zire-Baroona-Gomam.mp3",
+                cover: "https://uploadkon.ir/uploads/1b9c22_26InShot-20260523-003913383.jpg" },
+            { title: "Hame Chi Aroome", artist: "Hamid Talebzadeh",
+                src: "https://uploadkon.ir/uploads/883622_26Hamechi-Aroome-320-.mp3",
+                cover: "https://uploadkon.ir/uploads/d57d22_26InShot-20260523-004044003.jpg" },
+            { title: "Rasmaye Roozegar", artist: "Yousef Zamani",
+                src: "https://uploadkon.ir/uploads/efbf22_26Yousef-Zamani-Rasmaye-Roozegar-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/cbe922_26InShot-20260523-003924743.jpg" },
+            { title: "Be Raghs Aa", artist: "Mohsen Chavoshi", src: "https://uploadkon.ir/uploads/faaa13_26Mohsen-Chavoshi-Be-Raghs-Aa-128-.mp3", cover: "https://uploadkon.ir/uploads/f51d13_26InShot-20260613-104653807.jpg" },
+            { title: "Jaddeye Yek Tarafeh", artist: "Morteza Pashaei",
+                src: "https://uploadkon.ir/uploads/240709_26Morteza-Pashaei-Jaddeye-Yek-Tarafeh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/c52209_26InShot-20260609-104834374.jpg" },
+            { title: "Shakhe Nabat", artist: "Masih & Arash",
+                src: "https://uploadkon.ir/uploads/f48522_26Masih-Arash-Shakhe-Nabat-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/5de122_26InShot-20260523-003938315.jpg" },
+            { title: "Tomeh", artist: "Ehsan Daryadel",
+                src: "https://uploadkon.ir/uploads/e5b422_26Ehsan-Daryadel-Tomeh-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/23fa22_26InShot-20260523-003954320.jpg" },
+            { title: "Vabastegi", artist: "Mohsen Ebrahimzadeh",
+                src: "https://uploadkon.ir/uploads/348c08_26Mohsen-Ebrahimzadeh-Vabastegi-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/0f8408_26InShot-20260609-020447653.jpg" },
+            { title: "Gelooband", artist: "Erfan Tahmasebi",
+                src: "https://uploadkon.ir/uploads/0b0508_26Erfan-Tahmasbi-Gelooband-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/772308_26InShot-20260608-134808880.jpg" },
+            { title: "Marize Takhte Akhari", artist: "Mohsen Chavoshi",
+                src: "https://uploadkon.ir/uploads/545109_26Mohsen-Chavoshi-Marize-Takhte-Akhari-128-.mp3",
+                cover: "https://uploadkon.ir/uploads/9dcf09_26InShot-20260608-135759318.jpg" },
+            { title: "Rooze Sard", artist: "Shadmehr Aghili",
+                src: "https://uploadkon.ir/uploads/903909_2608-Rooze-Sard.mp3",
+                cover: "https://uploadkon.ir/uploads/7d2f09_26InShot-20260608-141108410.jpg" },
+        ];
+
+        const playlistData = allSongs.filter(song => {
+            if (song.title === "Zanco" && song.artist === "Zanco") return false;
+            if (song.title === "Moein Zandi" && song.artist === "Moein Zandi") return false;
+            if (song.title === "Majid Razavi" && song.artist === "Majid Razavi") return false;
+            return true;
+        });
+
+        const artistAvatarMap = {
+            "Haamim": "https://uploadkon.ir/uploads/605b08_26InShot-20260608-211739028.jpg",
+            "Reza Golzar": "https://uploadkon.ir/uploads/91a708_26InShot-20260608-234309178.jpg",
+            "Sharomin": "https://uploadkon.ir/uploads/159508_26InShot-20260608-234326331.jpg",
+            "Mohsen Ebrahimzadeh": "https://uploadkon.ir/uploads/56b308_26InShot-20260608-234337434.jpg",
+            "Pirbod": "https://uploadkon.ir/uploads/962f08_26InShot-20260608-234351260.jpg",
+            "Moein Zandi": "https://uploadkon.ir/uploads/fd6908_26InShot-20260608-234437978.jpg",
+            "Ehsan Daryadel": "https://uploadkon.ir/uploads/974508_26InShot-20260608-234456995.jpg",
+            "Saman Jalili": "https://uploadkon.ir/uploads/24f808_26InShot-20260608-234514049.jpg",
+            "Morteza Pashaei": "https://uploadkon.ir/uploads/efb608_26InShot-20260608-234535584.jpg",
+            "Omid Ameri": "https://uploadkon.ir/uploads/cc0208_26InShot-20260608-234552106.jpg",
+            "Ehsan Khaje Amiri": "https://uploadkon.ir/uploads/042c08_26InShot-20260608-234604229.jpg",
+            "Reza Mehrad": "https://uploadkon.ir/uploads/8edd08_26InShot-20260608-234615922.jpg",
+            "Hamid Askari": "https://uploadkon.ir/uploads/3d7e08_26InShot-20260608-234659292.jpg",
+            "Yousef Zamani": "https://uploadkon.ir/uploads/42c008_26InShot-20260608-234728255.jpg",
+            "Masoud Sadeghloo": "https://uploadkon.ir/uploads/bc9b08_26InShot-20260608-234745278.jpg",
+            "Saleh Salehi": "https://uploadkon.ir/uploads/454408_26InShot-20260608-234802063.jpg",
+            "Mehdi Darabi": "https://uploadkon.ir/uploads/285408_26InShot-20260608-234827162.jpg",
+            "Reza Bahram": "https://uploadkon.ir/uploads/6a8808_26InShot-20260608-234839387.jpg",
+            "Zanco": "https://uploadkon.ir/uploads/101c08_26InShot-20260608-235004859.jpg",
+            "Shadmehr Aghili": "https://uploadkon.ir/uploads/c6f108_26InShot-20260608-235039351.jpg",
+            "Hojat Ashrafzadeh": "https://uploadkon.ir/uploads/72b408_26InShot-20260608-235112245.jpg",
+            "Majid Razavi": "https://uploadkon.ir/uploads/b70008_26InShot-20260608-235125706.jpg",
+            "Aron Afshar": "https://uploadkon.ir/uploads/083f08_26InShot-20260608-235135994.jpg",
+            "Sina Sarlak": "https://uploadkon.ir/uploads/347008_26InShot-20260608-235145872.jpg",
+            "Benyamin Bahadori": "https://uploadkon.ir/uploads/b99508_26InShot-20260608-235157262.jpg",
+            "Atta": "https://uploadkon.ir/uploads/698c08_26InShot-20260608-235220113.jpg",
+            "Ashvan": "https://uploadkon.ir/uploads/1cea08_26InShot-20260608-235237833.jpg",
+            "Raibod": "https://uploadkon.ir/uploads/8a8508_26InShot-20260608-235306113.jpg",
+            "Sina Shabankhani": "https://uploadkon.ir/uploads/3c8b08_26InShot-20260608-235409684.jpg",
+            "Armin Zarei": "https://uploadkon.ir/uploads/e6f808_26InShot-20260608-235425790.jpg",
+            "Macan Band": "https://uploadkon.ir/uploads/a2cb08_26InShot-20260608-235444561.jpg",
+            "Hamid Talebzadeh": "https://uploadkon.ir/uploads/00b808_26InShot-20260608-235455537.jpg",
+            "Masih & Arash": "https://uploadkon.ir/uploads/03f808_26InShot-20260608-235522866.jpg",
+            "Erfan Tahmasebi": "https://uploadkon.ir/uploads/734108_26InShot-20260609-014326099.jpg",
+            "Mohsen Chavoshi": "https://uploadkon.ir/uploads/d68208_26InShot-20260609-014312533.jpg",
+            "Ali Yasini": "https://uploadkon.ir/uploads/d0ff08_26InShot-20260609-014350182.jpg",
+            "Hamid Hiraad": "https://uploadkon.ir/uploads/070a08_26InShot-20260609-015227897.jpg",
+            "Ragheb": "https://uploadkon.ir/uploads/dd8008_26InShot-20260609-015246487.jpg",
+            "Alireza Talischi": "https://uploadkon.ir/uploads/6dee08_26InShot-20260609-015255994.jpg",
+            "Mohsen Yeganeh": "https://uploadkon.ir/uploads/92d308_26InShot-20260609-014340721.jpg",
+            "Kasra Zahedi": "https://uploadkon.ir/uploads/a63a09_26InShot-20260609-131333860.jpg",
+            "Garsha Rezaei": "https://uploadkon.ir/uploads/0b0209_26InShot-20260609-202307500.jpg",
+            "Alireza Ghorbani": "https://uploadkon.ir/uploads/7ae009_26InShot-20260610-013003216.jpg",
+            "Behnam Bani": "https://uploadkon.ir/uploads/a81b12_26InShot-20260613-000049320.jpg",
+            "Reza Sadeghi": "https://uploadkon.ir/uploads/130012_26InShot-20260613-000136132.jpg",         
+                 };
+
+        function groupByArtist(songs) {
+            const map = new Map();
+            songs.forEach(s => {
+                if (!map.has(s.artist)) {
+                    const customAvatar = artistAvatarMap[s.artist] || null;
+                    map.set(s.artist, { artist: s.artist, songs: [], avatar: customAvatar });
+                }
+                map.get(s.artist).songs.push(s);
+            });
+            return Array.from(map.values());
+        }
+
+        const audioEl = document.getElementById("audio");
+        const playBtnEl = document.getElementById("playBtn");
+        const prevBtnEl = document.getElementById("prevBtn");
+        const nextBtnEl = document.getElementById("nextBtn");
+        const progressDivEl = document.getElementById("progress");
+        const progressBarEl = document.getElementById("progressBar");
+        const currentSpan = document.getElementById("currentTime");
+        const durationSpan = document.getElementById("duration");
+        const titleSpan = document.getElementById("title");
+        const artistSpan = document.getElementById("artist");
+        const coverImgEl = document.getElementById("cover");
+        const downloadLink = document.getElementById("downloadBtn");
+        const modeBtn = document.getElementById("modeBtn");
+        let currentIdx = 0;
+        let wasPlaying = false;
+
+        // ============ حالت تکرار: 0 = تکرار همه, 1 = تکرار یکی, 2 = شافل ============
+        let repeatMode = 0;
+
+        // تنظیم اولیه دکمه (مشابه کد دوم)
+        modeBtn.innerHTML = `<i class="fa-solid fa-repeat"></i>`;
+        modeBtn.title = "Repeat all";
+
+        // رویداد کلیک دکمه حالت (دقیقاً مشابه کد دوم)
+        modeBtn.addEventListener("click", () => {
+            repeatMode = (repeatMode + 1) % 3;
+            if (repeatMode === 0) {
+                modeBtn.innerHTML = `<i class="fa-solid fa-repeat"></i>`;
+                modeBtn.title = "Repeat all";
+                modeBtn.classList.remove('shuffle-active');
+            } else if (repeatMode === 1) {
+                modeBtn.innerHTML = `<i class="fa-solid fa-repeat"></i><span class="repeat-one-badge">1</span>`;
+                modeBtn.title = "Repeat one";
+                modeBtn.classList.remove('shuffle-active');
+            } else {
+                modeBtn.innerHTML = `<i class="fa-solid fa-shuffle"></i>`;
+                modeBtn.title = "Shuffle";
+                modeBtn.classList.add('shuffle-active');
+            }
+        });
+
+        // توابع شاخص‌گذاری با حالت‌های 0,1,2 (همانند قبل)
+        function getNextIndex() {
+            if (repeatMode === 1) return currentIdx;
+            if (repeatMode === 2) {
+                let newIdx = Math.floor(Math.random() * playlistData.length);
+                while (newIdx === currentIdx && playlistData.length > 1) {
+                    newIdx = Math.floor(Math.random() * playlistData.length);
+                }
+                return newIdx;
+            }
+            return (currentIdx + 1) % playlistData.length;
+        }
+
+        function getPrevIndex() {
+            if (repeatMode === 2) {
+                let newIdx = Math.floor(Math.random() * playlistData.length);
+                while (newIdx === currentIdx && playlistData.length > 1) {
+                    newIdx = Math.floor(Math.random() * playlistData.length);
+                }
+                return newIdx;
+            }
+            return (currentIdx - 1 + playlistData.length) % playlistData.length;
+        }
+
+        function formatTime(t) {
+            if (isNaN(t)) return "0:00";
+            let m = Math.floor(t / 60);
+            let s = Math.floor(t % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateMediaSession(song) {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: song.title,
+                    artist: song.artist,
+                    album: "Melodi Player",
+                    artwork: [{ src: song.cover, sizes: "512x512", type: "image/jpeg" }]
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    currentIdx = getPrevIndex();
+                    loadTrack(currentIdx);
+                    playTrack();
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    currentIdx = getNextIndex();
+                    loadTrack(currentIdx);
+                    playTrack();
+                });
+                navigator.mediaSession.setActionHandler('play', () => playTrack());
+                navigator.mediaSession.setActionHandler('pause', () => pauseTrack());
+            }
+        }
+
+        function loadTrack(idx) {
+            const s = playlistData[idx];
+            titleSpan.textContent = s.title;
+            artistSpan.textContent = s.artist;
+            coverImgEl.src = s.cover;
+            coverImgEl.classList.remove('loaded');
+            coverImgEl.onload = () => coverImgEl.classList.add('loaded');
+            coverImgEl.onerror = () => {
+                coverImgEl.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%23171c31'/%3E%3Ctext fill='%23fff'%3ENo Cover%3C/text%3E%3C/svg%3E";
+                coverImgEl.classList.add('loaded');
+            };
+            audioEl.src = s.src;
+            downloadLink.href = s.src;
+            downloadLink.setAttribute("download", `${s.title}.mp3`);
+            progressBarEl.style.width = "0%";
+            currentSpan.textContent = "0:00";
+            durationSpan.textContent = "0:00";
+            playBtnEl.classList.remove("pause");
+            updateMediaSession(s);
+            if (wasPlaying) setTimeout(() => { playTrack(); }, 50);
+        }
+
+        function playTrack() {
+            audioEl.play().then(() => {
+                playBtnEl.classList.add("pause");
+                wasPlaying = true;
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            }).catch(e => console.log("Auto-play blocked"));
+        }
+
+        function pauseTrack() {
+            audioEl.pause();
+            playBtnEl.classList.remove("pause");
+            wasPlaying = false;
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        }
+
+        playBtnEl.addEventListener("click", () => audioEl.paused ? playTrack() : pauseTrack());
+        prevBtnEl.addEventListener("click", () => {
+            currentIdx = getPrevIndex();
+            loadTrack(currentIdx);
+            setTimeout(() => { playTrack(); }, 50);
+        });
+        nextBtnEl.addEventListener("click", () => {
+            currentIdx = getNextIndex();
+            loadTrack(currentIdx);
+            setTimeout(() => { playTrack(); }, 50);
+        });
+
+        audioEl.addEventListener("timeupdate", () => {
+            let per = (audioEl.currentTime / audioEl.duration) * 100 || 0;
+            progressBarEl.style.width = `${per}%`;
+            currentSpan.textContent = formatTime(audioEl.currentTime);
+        });
+        audioEl.addEventListener("loadedmetadata", () => {
+            durationSpan.textContent = formatTime(audioEl.duration);
+        });
+        audioEl.addEventListener("ended", () => {
+            if (repeatMode === 1) {
+                audioEl.currentTime = 0;
+                playTrack();
+            } else {
+                currentIdx = getNextIndex();
+                loadTrack(currentIdx);
+                setTimeout(() => { playTrack(); }, 100);
+            }
+        });
+
+        setInterval(() => {
+            if (!audioEl.paused && audioEl.currentTime >= audioEl.duration - 0.5) {
+                if (audioEl.currentTime >= audioEl.duration - 0.1) {
+                    if (repeatMode === 1) {
+                        audioEl.currentTime = 0;
+                        playTrack();
+                    } else {
+                        currentIdx = getNextIndex();
+                        loadTrack(currentIdx);
+                        playTrack();
+                    }
+                }
+            }
+        }, 2000);
+
+        progressDivEl.addEventListener("click", (e) => {
+            let rect = progressDivEl.getBoundingClientRect();
+            let perc = (e.clientX - rect.left) / rect.width;
+            audioEl.currentTime = perc * audioEl.duration;
+        });
+
+        // ============ Playlist Modal ============
+        const playlistModal = document.getElementById("playlistModal");
+        const openPlaylist = document.getElementById("playlistBtn");
+        const closePlaylist = document.getElementById("closePlaylistBtn");
+        const artistsContainer = document.getElementById("artistGroupsContainer");
+        const playlistSearchInput = document.getElementById("playlistSearchInput");
+
+        function renderPlaylistWithFilter(searchTerm = "") {
+            const groups = groupByArtist(playlistData);
+            const filteredGroups = groups.filter(group =>
+                group.artist.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            artistsContainer.innerHTML = "";
+            if (filteredGroups.length === 0) {
+                artistsContainer.innerHTML =
+                    `<div class="not-found-message"><svg viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>No artist found.</span></div>`;
+                return;
+            }
+
+            filteredGroups.forEach(g => {
+                const card = document.createElement("div");
+                card.className = "artist-card";
+                const avatarUrl = g.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%237c5cff'/%3E%3Ctext x='32' y='42' fill='white' font-size='24' text-anchor='middle'%3E🎵%3C/text%3E%3C/svg%3E";
+                card.innerHTML =
+                    `<div class="artist-header"><img class="artist-avatar" src="${avatarUrl}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%237c5cff'/%3E%3Ctext x='32' y='42' fill='white' font-size='24' text-anchor='middle'%3E🎵%3C/text%3E%3C/svg%3E'"><div class="artist-info"><div class="artist-name">${g.artist}</div><div class="song-count">🎧 ${g.songs.length} song${g.songs.length !== 1 ? 's' : ''}</div></div></div><div class="songs-preview"></div>`;
+                const preview = card.querySelector(".songs-preview");
+                g.songs.forEach(song => {
+                    const row = document.createElement("div");
+                    row.className = "preview-song";
+                    row.innerHTML =
+                        `<div style="display: flex; align-items: center; gap: 10px;"><img class="preview-song-cover" src="${song.cover}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23333'/%3E%3C/svg%3E'"><div><div class="preview-song-title">${song.title}</div><div class="preview-song-artist">${song.artist}</div></div></div><div class="play-icon-small">▶</div>`;
+                    row.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const idx = playlistData.findIndex(s => s.title === song.title && s.artist === song
+                            .artist);
+                        if (idx !== -1) {
+                            currentIdx = idx;
+                            loadTrack(currentIdx);
+                            setTimeout(() => { playTrack(); }, 50);
+                            playlistModal.classList.remove("active");
+                        }
+                    });
+                    preview.appendChild(row);
+                });
+                card.addEventListener("click", (e) => {
+                    if (!e.target.closest(".preview-song")) card.classList.toggle("expanded");
+                });
+                artistsContainer.appendChild(card);
+            });
+        }
+
+        function renderPlaylist() {
+            if (playlistSearchInput) {
+                playlistSearchInput.value = "";
+                renderPlaylistWithFilter("");
+            }
+        }
+
+        if (playlistSearchInput) {
+            playlistSearchInput.addEventListener("input", (e) => {
+                renderPlaylistWithFilter(e.target.value);
+            });
+        }
+
+        openPlaylist.addEventListener("click", () => { renderPlaylist();
+            playlistModal.classList.add("active"); });
+        closePlaylist.addEventListener("click", () => playlistModal.classList.remove("active"));
+        playlistModal.addEventListener("click", (e) => {
+            if (e.target === playlistModal) playlistModal.classList.remove("active");
+        });
+
+        // ============ Search Modal ============
+        const searchModal = document.getElementById("searchModal");
+        const searchBtn = document.getElementById("searchBtn");
+        const searchInput = document.getElementById("searchInput");
+        const closeSearch = document.getElementById("closeSearchBtn");
+        const performSearch = document.getElementById("performSearchBtn");
+        const resultsDiv = document.getElementById("searchResults");
+
+        function doSearch() {
+            const q = searchInput.value.trim().toLowerCase();
+            if (!q) {
+                resultsDiv.innerHTML =
+                    `<div class="not-found-message"><svg viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Type something to search.</span></div>`;
+                resultsDiv.classList.add("show");
+                return;
+            }
+            const filtered = playlistData.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
+            if (filtered.length === 0) {
+                resultsDiv.innerHTML =
+                    `<div class="not-found-message"><svg viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>No song found.</span></div>`;
+                resultsDiv.classList.add("show");
+                return;
+            }
+            resultsDiv.innerHTML = "";
+            filtered.forEach(song => {
+                const item = document.createElement("div");
+                item.className = "result-item";
+                item.innerHTML =
+                    `<img src="${song.cover}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23333'/%3E%3C/svg%3E'"><div class="result-info"><div class="result-title">${song.title}</div><div class="result-artist">${song.artist}</div></div>`;
+                item.addEventListener("click", () => {
+                    const idx = playlistData.findIndex(s => s.title === song.title && s.artist === song
+                        .artist);
+                    if (idx !== -1) {
+                        currentIdx = idx;
+                        loadTrack(currentIdx);
+                        setTimeout(() => { playTrack(); }, 50);
+                        searchModal.classList.remove("active");
+                        resultsDiv.classList.remove("show");
+                    }
+                });
+                resultsDiv.appendChild(item);
+            });
+            resultsDiv.classList.add("show");
+        }
+        searchBtn.addEventListener("click", () => {
+            searchModal.classList.add("active");
+            searchInput.value = "";
+            resultsDiv.classList.remove("show");
+            resultsDiv.innerHTML = "";
+        });
+        closeSearch.addEventListener("click", () => searchModal.classList.remove("active"));
+        performSearch.addEventListener("click", doSearch);
+        searchInput.addEventListener("keypress", e => { if (e.key === "Enter") doSearch(); });
+        searchModal.addEventListener("click", e => { if (e.target === searchModal) searchModal.classList.remove("active"); });
+
+        // ============ Info Modal ============
+        const infoModal = document.getElementById("infoModalWin");
+        const infoBtn = document.getElementById("infoBtn");
+        const closeInfo = document.getElementById("closeInfoModalBtn");
+        infoBtn.addEventListener("click", () => infoModal.classList.add("active"));
+        closeInfo.addEventListener("click", () => infoModal.classList.remove("active"));
+        infoModal.addEventListener("click", e => { if (e.target === infoModal) infoModal.classList.remove("active"); });
+
+        // ============ Init ============
+        if (playlistData.length) loadTrack(0);
+        // تنظیم اولیه دکمه (از قبل انجام شد)
+    </script>
+</body>
+</html>
